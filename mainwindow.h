@@ -46,9 +46,11 @@ private:
     QWaitCondition newSessionPauseCondition;    // for pause the session thread
     bool newSessionPaused;                      // record if session thread was paused
     vector<Session *> sessions;                 // store the session obj
-    bool isConnect;                             // record if exist connection
     bool isStop;                                // record if the session was terminated to make all child thread stop
     bool newSessionSuccess;                     // record the session result to do different function
+    QTime sessionTime;
+    double progress;
+    QTimer* sessionTimer;
 
     void showMenuSelectionOne();
     void closeMenuSelectionOne();
@@ -58,6 +60,7 @@ private:
     void newSessionCompleted();
     void pauseNewSessionTimerStart();
     void pauseNewSessionTimerEnd();
+
 
     /*
      * SESSION LOG
@@ -70,6 +73,7 @@ private:
     */
     QDate deviceDate;
     QTime deviceTime;
+    QTimer* deviceTimer;
 
     void showMenuSelectionThree();
     void closeMenuSelectionThree();
@@ -78,12 +82,16 @@ private:
     /*
      * LIGHT
     */
-    QTimer* flashTimer;                     // make light flash
+    QTimer* redFlashTimer;
+    QTimer* greenFlashTimer;
 
     void lightOn(QGraphicsView* gv, const string& color);
     void lightOff(QGraphicsView* gv);
-    void lightflashOn(QGraphicsView* gv, const QString& color);
-    void lightflashOff(QGraphicsView* gv);
+    void redLightflashOn();
+    void redLightflashOff();
+    void greenLightflashOn();
+    void greenLightflashOff();
+    void initialTimer();
 
     /*
      * BATTERY
@@ -109,14 +117,35 @@ private:
     void closeScreenAll();
     void beep();
 
+
+    /*
+     * EEG
+     */
+    bool isConnect;                             // record if exist connection
+
+    /*
+     * PC
+     */
+    vector<Session *> pcSessions;            // record pc data
+
 signals:
     /*
      * child thread can not directly use parent timer and crate object
      * use signal to make child emit the signal
     */
-    void signalLightFlashOn(QGraphicsView* gv, const QString& color);
-    void signalLightFlashOff(QGraphicsView* gv);
+    void signalBlueLightOn();
+    void signalBlueLightOff();
+    void signalRedLightFlashOn();
+    void signalRedLightFlashOff();
+    void signalGreenLightFlashOn();
+    void signalGreenLightFlashOff();
     void signalBeep();
+    void signalUpdateBattery();
+    void signalUpdateProgress();
+    void signalSessionTimerInitial();
+    void signalSessionTimerStart();
+    void signalSessionTimerPause();
+
 
 
 private slots:
@@ -129,6 +158,10 @@ private slots:
     void exitNewSession();
     void AutoOff();
     void checkConnection();
+    void updateProgress();
+    void sessionTimerInitial();
+    void sessionTimerStart();
+    void sessionTimerPause();
 
     /*
      * TIME AND DATE
@@ -137,25 +170,27 @@ private slots:
     void decreaseDateTime();
 
     /*
+     * Light
+    */
+    void blueLightOn();
+    void blueLightOff();
+
+    /*
+     * Battery
+     */
+    void updateBattery();
+
+    /*
      * Utils
     */
     void power();
     void doubleClickMenu();
     void showMenu();
 
-
-
     /*
-     * EGG
+     * PC
     */
-    void toggleConnect();               // this is for a button to control the connection
+    void submitData();
 
-
-
-
-
-    // will discard
-    void test1();   // this now connect with toggleConnect can control the connection
-    void test2();   // this is test for the window can response action
 };
 #endif // MAINWINDOW_H

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>1298</width>
+    <height>848</height>
    </rect>
   </property>
   <property name="font">
@@ -28,8 +28,8 @@
    <widget class="QFrame" name="interface_frame">
     <property name="geometry">
      <rect>
-      <x>280</x>
-      <y>30</y>
+      <x>290</x>
+      <y>20</y>
       <width>350</width>
       <height>400</height>
      </rect>
@@ -52,11 +52,14 @@
        <height>40</height>
       </rect>
      </property>
+     <property name="styleSheet">
+      <string notr="true"/>
+     </property>
      <property name="value">
       <number>100</number>
      </property>
      <property name="alignment">
-      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+      <set>Qt::AlignCenter</set>
      </property>
      <property name="textVisible">
       <bool>false</bool>
@@ -154,7 +157,7 @@ QTimeEdit::up-arrow, QTimeEdit::down-arrow {
 }</string>
       </property>
       <property name="displayFormat">
-       <string>h:mm</string>
+       <string>m:ss</string>
       </property>
      </widget>
      <widget class="QProgressBar" name="interface_menu_selection0_progress">
@@ -385,32 +388,6 @@ QDateEdit::up-arrow, QDatedit::down-arrow {
       </widget>
      </widget>
     </widget>
-    <widget class="QPushButton" name="interface_up">
-     <property name="geometry">
-      <rect>
-       <x>260</x>
-       <y>130</y>
-       <width>51</width>
-       <height>23</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Up</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="interface_down">
-     <property name="geometry">
-      <rect>
-       <x>260</x>
-       <y>180</y>
-       <width>51</width>
-       <height>23</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Down</string>
-     </property>
-    </widget>
     <widget class="QPushButton" name="interface_menu">
      <property name="geometry">
       <rect>
@@ -516,13 +493,156 @@ QDateEdit::up-arrow, QDatedit::down-arrow {
      </property>
     </widget>
    </widget>
+   <widget class="QFrame" name="eeg_frame">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>170</y>
+      <width>191</width>
+      <height>111</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QFrame { background-color: white; }</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::StyledPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Raised</enum>
+    </property>
+    <widget class="QLabel" name="label">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>30</y>
+       <width>131</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>EEG Connection</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="toggleConnection">
+     <property name="geometry">
+      <rect>
+       <x>50</x>
+       <y>70</y>
+       <width>80</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>OFF</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QFrame" name="pc_transation">
+    <property name="geometry">
+     <rect>
+      <x>690</x>
+      <y>160</y>
+      <width>191</width>
+      <height>111</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QFrame { background-color: white; }</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::StyledPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Raised</enum>
+    </property>
+    <widget class="QLabel" name="label_2">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>30</y>
+       <width>131</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>PC Transation</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pc_submit">
+     <property name="geometry">
+      <rect>
+       <x>50</x>
+       <y>70</y>
+       <width>80</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Submit</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QFrame" name="pc_screen">
+    <property name="geometry">
+     <rect>
+      <x>160</x>
+      <y>450</y>
+      <width>811</width>
+      <height>371</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QFrame { background-color: white; }</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::StyledPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Raised</enum>
+    </property>
+    <widget class="QLabel" name="label_3">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>131</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>PC Moniotor</string>
+     </property>
+    </widget>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>1298</width>
      <height>20</height>
     </rect>
    </property>

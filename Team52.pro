@@ -11,13 +11,20 @@ CONFIG += c++11
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    analysisWave.cpp \
     main.cpp \
     mainwindow.cpp \
-    session.cpp
+    session.cpp \
+    site.cpp \
+    waveSimulator.cpp
 
 HEADERS += \
+    analysisWave.h \
+    frequencyBands.h \
     mainwindow.h \
-    session.h
+    session.h \
+    site.h \
+    waveSimulator.h
 
 FORMS += \
     mainwindow.ui
@@ -28,3 +35,5 @@ RESOURCES += /home/student/Downloads/beep.qrc # `wget https://www.soundjay.com/b
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+DISTFILES +=

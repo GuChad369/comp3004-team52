@@ -4,9 +4,6 @@
 
 
 /*
- * this is the final version need to change
- * battery duration: 0.5 -> 0.05
- * 60 -> 5 * 60
  *
  *
  *
@@ -17,17 +14,18 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
     ,newSessionPaused(false)
-    ,isConnect(false)
     ,isStop(true)
+    ,progress(0.0)
     ,batteryPaused(false)
     ,batteryVolume(100.0)
     ,batteryInitiate(false)
     ,powerValue(false)
+    ,isConnect(false)
 
 {
     ui->setupUi(this);
     // increase QThreadPool, otherwise cant work for multi-thread
-    QThreadPool::globalInstance()->setMaxThreadCount(10);
+    QThreadPool::globalInstance()->setMaxThreadCount(20);
 
     /*
      * NEW SESSION
@@ -40,6 +38,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->interface_pause, &QPushButton::clicked, this, &MainWindow::pauseTask);
     connect(ui->interface_start, &QPushButton::clicked, this, &MainWindow::resumeTask);
     connect(ui->interface_stop, &QPushButton::clicked, this, &MainWindow::stopTask);
+    sessionTimer = new QTimer(this);
 
     /*
      * SESSION LOG
@@ -59,18 +58,39 @@ MainWindow::MainWindow(QWidget *parent)
     ui->interface_menu_selection2_frame->setVisible(false);
     // initial the date and time to the window
     updateDateTime();
+    deviceTimer = new QTimer(this);
+    connect(deviceTimer, &QTimer::timeout, this, [this]() {
+        deviceTime = deviceTime.addSecs(1);
+    });
+    deviceTimer->start(1000);
 
     /*
      * Light
      *
     */
-    flashTimer = new QTimer(this);
+    redFlashTimer = new QTimer(this);
+    greenFlashTimer = new QTimer(this);
+    initialTimer();
+    redLightflashOff();
+    greenLightflashOff();
+
+
     // for light since thread cant call parent timer directly
-    connect(this, &MainWindow::signalLightFlashOn, this, &MainWindow::lightflashOn, Qt::QueuedConnection);
-    connect(this, &MainWindow::signalLightFlashOff, this, &MainWindow::lightflashOff, Qt::QueuedConnection);
+    connect(this, &MainWindow::signalBlueLightOn, this, &MainWindow::blueLightOn, Qt::QueuedConnection);
+    connect(this, &MainWindow::signalBlueLightOff, this, &MainWindow::blueLightOff, Qt::QueuedConnection);
+    connect(this, &MainWindow::signalRedLightFlashOn, this, &MainWindow::redLightflashOn, Qt::QueuedConnection);
+    connect(this, &MainWindow::signalRedLightFlashOff, this, &MainWindow::redLightflashOff, Qt::QueuedConnection);
+    connect(this, &MainWindow::signalGreenLightFlashOn, this, &MainWindow::greenLightflashOn, Qt::QueuedConnection);
+    connect(this, &MainWindow::signalGreenLightFlashOff, this, &MainWindow::greenLightflashOff, Qt::QueuedConnection);
     // for beep, same reason
     connect(this, &MainWindow::signalBeep, this, &MainWindow::beep, Qt::QueuedConnection);
-
+    // for new session
+    connect(this, &MainWindow::signalUpdateProgress, this, &MainWindow::updateProgress, Qt::QueuedConnection);
+    connect(this, &MainWindow::signalSessionTimerInitial, this, &MainWindow::sessionTimerInitial, Qt::QueuedConnection);
+    connect(this, &MainWindow::signalSessionTimerStart, this, &MainWindow::sessionTimerStart, Qt::QueuedConnection);
+    connect(this, &MainWindow::signalSessionTimerPause, this, &MainWindow::sessionTimerPause, Qt::QueuedConnection);
+    // for battery
+    connect(this, &MainWindow::signalUpdateBattery, this, &MainWindow::updateBattery, Qt::QueuedConnection);
 
 
     /*
@@ -84,9 +104,15 @@ MainWindow::MainWindow(QWidget *parent)
 
 
 
-    // just for test
-    connect(ui->interface_up, &QPushButton::clicked, this, &MainWindow::test1);
-    connect(ui->interface_down, &QPushButton::clicked, this, &MainWindow::test2);
+    /*
+     * EEG
+     */
+    connect(ui->toggleConnection, &QPushButton::toggled, [this](bool checked) {
+        isConnect = !isConnect;
+        ui->toggleConnection->setText(checked ? "On" : "Off");
+    });
+
+
 }
 
 MainWindow::~MainWindow()
@@ -121,16 +147,17 @@ void MainWindow::closeMenuSelectionOne(){
 }
 void MainWindow::checkConnection(){
     while(!isStop){
-        cout<<"check"<<endl;
+        qDebug()<<"check connection";
         if(isConnect){
             // light the blue
-            lightOn(ui->interface_blue,"blue");
-            emit signalLightFlashOff(ui->interface_red);
+            emit signalBlueLightOn();
+            emit signalRedLightFlashOff();
             QThread::msleep(1000);
         }else{
+            qDebug()<<"wait connection";
             // close blue
-            lightOff(ui->interface_blue);
-            emit signalLightFlashOn(ui->interface_red, "red");
+            emit signalBlueLightOff();
+            emit signalRedLightFlashOn();
 
             // pause action
             pauseTask();
@@ -140,7 +167,7 @@ void MainWindow::checkConnection(){
             while(!isStop){
                 QDateTime currentTime = QDateTime::currentDateTime();
                 qint64 elapsedSeconds = startTime.secsTo(currentTime);
-                if (elapsedSeconds >= 60) {
+                if (elapsedSeconds >= 5 *60) {
                     // fail
                     return;
                 }
@@ -176,7 +203,13 @@ bool MainWindow::initiateSession(){
         QString date = deviceDate.toString("yyyy-MM-dd");
         QString time = deviceTime.toString("HH:mm:ss");
         Session* s = new Session(date.toStdString(),time.toStdString());
+        QString title = date + " " + time;
+        s->setTitle(title.toStdString());
         sessions.push_back(s);
+        sessionTime = QTime(0,0,0);
+        emit signalSessionTimerInitial();
+        progress = 0.0;
+        emit updateProgress();
         return true;
     }else{
         // wait the connection for 5 minutes
@@ -185,7 +218,7 @@ bool MainWindow::initiateSession(){
         while(!isStop){
             QDateTime currentTime = QDateTime::currentDateTime();
             qint64 elapsedSeconds = startTime.secsTo(currentTime);
-            if (elapsedSeconds >= 60) {
+            if (elapsedSeconds >= 5 * 60) {
                 // fail
                 return false;
             }
@@ -195,21 +228,116 @@ bool MainWindow::initiateSession(){
             QThread::msleep(1000);
         }
     }
+    return false;
 }
 bool MainWindow::doCalculate(){
-    QThread::msleep(2000);
-    return true;
     while(!isStop){
+        cout<<"detected no error with device functions"<<endl;
+        emit signalSessionTimerStart();
 
-        newSessionMutex.lock();
-        if (newSessionPaused) {
-            newSessionPauseCondition.wait(&newSessionMutex);
+        // get the session
+        Session *currSession;
+        if (!sessions.empty()) {
+            currSession = sessions.back();
+        }else{
+            return false;
         }
-        newSessionMutex.unlock();
 
-        cout<<"runing"<<endl;
+        currSession->startSession();
+        // function used to calculate overall baseline for 21 sites, will be showed in PC UI
+        currSession->calculateBeforeSessionBaselines();
+        currSession->setCurrentSite(0);
+        for (int i = 0; i <60;i++ ) {
+
+            newSessionMutex.lock();
+            if (newSessionPaused) {
+                emit signalSessionTimerPause();
+                newSessionPauseCondition.wait(&newSessionMutex);
+                emit signalSessionTimerStart();
+            }
+            newSessionMutex.unlock();
+
+
+
+            QThread::msleep(1000);
+            progress += 0.617;
+            emit signalUpdateProgress();
+        }
+
+
+        // green light flash
+        emit signalGreenLightFlashOn();
+        for (int st = 0; st < 21; st++) {
+
+            if(isStop){
+                return false;
+            }
+
+            currSession->setTreatmentCounter(0);
+            for (int i = 0; i < 16; i++ ) {
+                if(isStop){
+                    return false;
+                }
+                // do the pause
+                newSessionMutex.lock();
+                if (newSessionPaused) {
+                    emit signalGreenLightFlashOff();
+                    emit signalSessionTimerPause();
+                    newSessionPauseCondition.wait(&newSessionMutex);
+                    emit signalGreenLightFlashOn();
+                    emit signalSessionTimerStart();
+
+                }
+                newSessionMutex.unlock();
+
+                int succ = currSession->onetimeTreatment();
+                if(succ){
+                    return false;
+                }
+                currSession->setTreatmentCounter(currSession->getTreatmentCounter()+1);
+
+
+                // 1/16 second delay moving to next round
+                QThread::msleep(1000 / 16);
+
+            }
+            progress += 0.617;
+            emit signalUpdateProgress();
+
+            qInfo()<<"Site"<<currSession->getCurrentSite()+1<<"has finished treatment.";
+            currSession->setCurrentSite(currSession->getCurrentSite()+1);
+
+            QThread::msleep(1000);//1 second delay moving to next site
+            progress += 0.617;
+            emit signalUpdateProgress();
+
+        }
+        // close light
+        emit signalGreenLightFlashOff();
+
+        qInfo() << "------------------------------Treatment finished for all sites.------------------------------";
+        currSession->calculateAfterSessionBaselines();//this is the function calculate overall baseline after session.
+
+        for (int i = 0; i <60;i++ ) {
+            newSessionMutex.lock();
+                        if (newSessionPaused) {
+                            emit signalSessionTimerPause();
+                            newSessionPauseCondition.wait(&newSessionMutex);
+                            emit signalSessionTimerStart();
+                        }
+                        newSessionMutex.unlock();
+
+            progress += 0.617;
+            emit signalUpdateProgress();
+
+            QThread::msleep(1000);
+        }
+
+        progress = 100;
+        emit signalUpdateProgress();
+        emit signalSessionTimerPause();
         QThread::msleep(1000);
-
+        return true;
     }
     return false;
 }
@@ -236,7 +364,7 @@ void MainWindow::pauseNewSessionTimerStart(){
         pauseNewSessionTimer = nullptr;
     }
     pauseNewSessionTimer = new QTimer(this);
-    pauseNewSessionTimer->setInterval(5000); // 5000 milliseconds = 5 seconds
+    pauseNewSessionTimer->setInterval(60000); // 60000 milliseconds = 60 seconds
     connect(pauseNewSessionTimer, &QTimer::timeout, this, &MainWindow::AutoOff);
     pauseNewSessionTimer->start();
 }
@@ -275,8 +403,9 @@ void MainWindow::stopTask(){
 void MainWindow::newSessionCompleted(){
     isStop = true;
     // close light
-    lightOff(ui->interface_blue);
-    lightflashOff(ui->interface_red);
+    blueLightOff();
+    redLightflashOff();
+    greenLightflashOff();
     if(newSessionSuccess){
         // show complete component
         ui->interface_menu_selection0_completed->setVisible(true);
@@ -294,6 +423,7 @@ void MainWindow::AutoOff(){
         resumeTask();
     }
     isStop = true;
+    sessionTimerPause();
     // delete the session
     if (!sessions.empty()) {
         Session *newestSession = sessions.back();
@@ -303,7 +433,7 @@ void MainWindow::AutoOff(){
         }
     }
     // close light
-    lightflashOff(ui->interface_red);
+    redLightflashOff();
     // close Timer
     pauseNewSessionTimerEnd();
     powerOff();
@@ -316,6 +446,33 @@ void MainWindow::exitNewSession(){
     ui->interface_menu_selection0_completed->setVisible(false);
     showMenuSelection();
     newSessionSuccess = false;
+}
+void MainWindow::updateProgress(){
+    // get value
+    int currentValue = ui->interface_menu_selection0_progress->value();
+    int changedInt = static_cast<int>(progress);
+
+    if(changedInt == 100){
+        return;
+    }
+
+    if(currentValue != changedInt){
+        ui->interface_menu_selection0_progress->setValue(changedInt);
+    }
+}
+void MainWindow::sessionTimerInitial(){
+    disconnect(sessionTimer, &QTimer::timeout, nullptr, nullptr);
+    connect(sessionTimer, &QTimer::timeout, this, [this]() {
+        sessionTime = sessionTime.addSecs(1);
+        ui->interface_menu_selection0_time->setTime(sessionTime);
+    });
+
+}
+void MainWindow::sessionTimerStart(){
+    sessionTimer->start(1000);
+}
+void MainWindow::sessionTimerPause(){
+    sessionTimer->stop();
 }
 
 
@@ -330,9 +487,7 @@ void MainWindow::showMenuSelectionTwo(){
         ui->interface_menu_selection1->setVisible(true);
         for (Session* s : sessions) {
             if(s != nullptr){
-                QString date = QString::fromStdString(s->getDate());
-                QString time = QString::fromStdString(s->getTime());
-                QString itemText = date + " " + time;
+                QString itemText = QString::fromStdString(s->getTitle());
 
                 // Check if an item with the same text already exists
                 QList<QListWidgetItem*> existingItems = ui->interface_menu_selection1->findItems(itemText, Qt::MatchExactly);
@@ -342,6 +497,10 @@ void MainWindow::showMenuSelectionTwo(){
                     newItem->setText(itemText);
                     ui->interface_menu_selection1->addItem(newItem);
                 }
+
+                qInfo() << itemText;
+                // print the result
+                s->printPCRecords();
             }
         }
     }else{
@@ -443,50 +602,106 @@ void MainWindow::lightOff(QGraphicsView* gv){
         }
     }
 }
-void MainWindow::lightflashOn(QGraphicsView* gv, const QString& color){
-    if (gv) {
-        // Store the original and flash colors in properties for later use
-        gv->setProperty("originalColor", gv->styleSheet());
-        gv->setProperty("flashColor", QString("QGraphicsView { background-color: %1; }").arg(color));
+void MainWindow::initialTimer() {
+    // Store the original and flash colors in properties for later use
+    ui->interface_red->setProperty("originalColor", ui->interface_red->styleSheet());
+    ui->interface_red->setProperty("flashColor", QString("QGraphicsView { background-color: %1; }").arg("red"));
+    ui->interface_green->setProperty("originalColor", ui->interface_green->styleSheet());
+    ui->interface_green->setProperty("flashColor", QString("QGraphicsView { background-color: %1; }").arg("green"));
 
-        // check
-        disconnect(flashTimer, &QTimer::timeout, nullptr, nullptr);
+    // Connect the timer's timeout signal to a lambda function that toggles the color for the red view
+    connect(redFlashTimer, &QTimer::timeout, this, [this]() {
+        static bool flashState = false;
+        QGraphicsView* gv = ui->interface_red; // Assuming interface_red is a QGraphicsView*
+        if (flashState) {
+            gv->setStyleSheet(gv->property("originalColor").toString());
+        } else {
+            gv->setStyleSheet(gv->property("flashColor").toString());
+        }
+        flashState = !flashState;
+    });
+    redFlashTimer->start(100);
 
-        // Connect the timer's timeout signal to a lambda function that toggles the color
-        connect(flashTimer, &QTimer::timeout, this, [gv]() {
-            static bool flashState = false;
-            if (flashState) {
-                gv->setStyleSheet(gv->property("originalColor").toString());
-            } else {
-                gv->setStyleSheet(gv->property("flashColor").toString());
-            }
-            flashState = !flashState;
-        });
+    // Connect the timer's timeout signal to a lambda function that toggles the color for the green view
+    connect(greenFlashTimer, &QTimer::timeout, this, [this]() {
+        static bool flashState = false;
+        QGraphicsView* gv = ui->interface_green; // Assuming interface_green is a QGraphicsView*
+        if (flashState) {
+            gv->setStyleSheet(gv->property("originalColor").toString());
+        } else {
+            gv->setStyleSheet(gv->property("flashColor").toString());
+        }
+        flashState = !flashState;
+    });
+    greenFlashTimer->start(100);
+}
 
-        // Start the timer with an interval of 500 milliseconds (0.1 seconds)
-        flashTimer->start(100);
+void MainWindow::redLightflashOn(){
+    redFlashTimer->start();
+
+}
+void MainWindow::redLightflashOff(){
+
+    redFlashTimer->stop();  // Stop the flashing timer
+    QVariant originalColor = ui->interface_red->property("originalColor");
+    if (originalColor.isValid()) {
+        ui->interface_red->setStyleSheet(originalColor.toString());  // Restore the original color if it exists
+    }
+
+
+}
+void MainWindow::greenLightflashOn(){
+    greenFlashTimer->start();
+}
+void MainWindow::greenLightflashOff(){
+
+    greenFlashTimer->stop();  // Stop the flashing timer
+    QVariant originalColor = ui->interface_green->property("originalColor");
+    if (originalColor.isValid()) {
+        ui->interface_green->setStyleSheet(originalColor.toString());  // Restore the original color if it exists
     }
 }
-void MainWindow::lightflashOff(QGraphicsView* gv){
-    if (gv) {
-        if(flashTimer!=nullptr){
-            flashTimer->stop();  // Stop the flashing timer
-            QVariant originalColor = gv->property("originalColor");
-            if (originalColor.isValid()) {
-                gv->setStyleSheet(originalColor.toString());  // Restore the original color if it exists
-            }
-        }
-    }
+void MainWindow::blueLightOn(){
+    lightOn(ui->interface_blue,"blue");
+
+}
+void MainWindow::blueLightOff(){
+    lightOff(ui->interface_blue);
 }
 
 
 /*
  * BATTERY
  */
+void MainWindow::updateBattery(){
+    // get value
+    int currentValue = ui->interface_battery->value();
+    int changedInt = static_cast<int>(batteryVolume);
+    if(currentValue != changedInt){
+        ui->interface_battery->setValue(changedInt);
+    }
+    if(!changedInt){
+        AutoOff();
+    }
+
+    // show warning
+    if(changedInt < 10){
+        ui->interface_battery->setStyleSheet(
+                    "QProgressBar {"
+                    "   border: 2px solid grey;"
+                    "   border-radius: 5px;"
+                    "   background-color: #FFFFFF;"
+                    "}"
+                    "QProgressBar::chunk {"
+                    "   background-color: #FF0000;" // Red color
+                    "}"
+                    );
+    }
+}
 void MainWindow::batteryAction(){
     // duration is 33 minutes
     while(1){
-        cout<<"battery: "<< batteryVolume<<endl;
+        qDebug()<<"battery: "<< batteryVolume;
         batteryMutex.lock();
         if (batteryPaused) {
             batteryPauseCondition.wait(&batteryMutex);
@@ -495,16 +710,10 @@ void MainWindow::batteryAction(){
 
 
         // update value
-        batteryVolume -= 0.5;
-        // get value
-        int currentValue = ui->interface_battery->value();
-        int changedInt = static_cast<int>(batteryVolume);
-        if(currentValue != changedInt){
-            ui->interface_battery->setValue(changedInt);
-        }
-        if(!changedInt){
-            AutoOff();
-        }
+        batteryVolume -= 0.05;
+
+        emit signalUpdateBattery();
+
         QThread::msleep(1000);
     }
 }
@@ -669,24 +878,12 @@ void MainWindow::doubleClickMenu(){
 
 
 /*
- * EGG
+ * PC
  */
-void MainWindow::toggleConnect(){
-    isConnect = !isConnect;
-}
-
-
-
-
-// just for test
-void MainWindow::test1(){
-    toggleConnect();
-    cout<<isConnect<<endl;
-}
-
-void MainWindow::test2(){
-    int count = ui->interface_screen->children().count();
-    cout<<count<<endl;
+void MainWindow::submitData(){
+    for (Session* s : sessions){
+        pcSessions.push_back(s);
+    }
 }
 
 
