@@ -1,6 +1,6 @@
 QT       += core gui
-QT += multimedia    # `sudo apt-get install qtmultimedia5-dev` download the library
-QT += concurrent    # for multi-thread
+QT += multimedia   #'sudo apt-get install qtmultimedia5-dev' download the library
+QT += concurrent   #for multi-thread
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -29,11 +29,12 @@ HEADERS += \
 FORMS += \
     mainwindow.ui
 
+
 RESOURCES += /home/student/Downloads/beep.qrc # `wget https://www.soundjay.com/buttons/beep-01a.wav` download the sound
+
+
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
-
-DISTFILES +=

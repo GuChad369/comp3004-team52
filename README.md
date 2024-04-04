@@ -1,4 +1,54 @@
-# Set Env
+# Introduction
+
+## Team members
+
+Team 52: Joris
+
+- Haoxuan Hong
+
+- Chao Gu
+
+- Yue Li
+
+- Yuxiang He
+
+- Enhua Fan
+
+## Task allocation
+
+In our team, everyone contributes to every part of the project, but there is a designated primary person responsible for each specific aspect.
+
+1. Use cases:
+
+    - primary: Yuxiang He
+    - other team members
+
+2. UML Class diagram:  
+    - primary: Enhua Fan
+    - other team members
+
+3. UML Sequence diagrams:
+    - primary: Enhua Fan
+    - other team members
+
+4. UML State machine diagrams:
+    - primary: Haoxuan Hong
+    - other team members
+
+5. Implementation:
+    - primary: Chao Gu
+    - Session log: Enhua Fan
+    - Tim and date: Haoxuean Hong
+    - PC part:  Yuxiang He
+    - EEG part: Yue Li
+    - Battery: Yue Li
+    - New session: Chao Gu
+
+6. Traceability matrix:
+    - primary: Haoxuan Hong
+    - other team members
+
+## Set Env
 
 1. Download the code from git
 

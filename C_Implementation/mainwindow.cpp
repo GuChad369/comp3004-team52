@@ -16,7 +16,6 @@ MainWindow::MainWindow(QWidget *parent)
     ,newSessionPaused(false)
     ,isStop(true)
     ,progress(0.0)
-    ,duration(0.0)
     ,batteryPaused(false)
     ,batteryVolume(100.0)
     ,batteryInitiate(false)
@@ -27,6 +26,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     // increase QThreadPool, otherwise cant work for multi-thread
     QThreadPool::globalInstance()->setMaxThreadCount(20);
+
+    //initialize Lable texts showing in PC
+    PC_date = "Sorry! No previous sessions detect!";
+    PC_time = "Sorry! No previous sessions detect!";
 
     /*
      * NEW SESSION
@@ -40,6 +43,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->interface_start, &QPushButton::clicked, this, &MainWindow::resumeTask);
     connect(ui->interface_stop, &QPushButton::clicked, this, &MainWindow::stopTask);
     sessionTimer = new QTimer(this);
+
+    //for pc ui test
+    connect(ui->pc_submit, &QPushButton::clicked, this, &MainWindow::pc_submit_clicked);
 
     /*
      * SESSION LOG
@@ -92,6 +98,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(this, &MainWindow::signalSessionTimerPause, this, &MainWindow::sessionTimerPause, Qt::QueuedConnection);
     // for battery
     connect(this, &MainWindow::signalUpdateBattery, this, &MainWindow::updateBattery, Qt::QueuedConnection);
+
+
 
 
     /*
@@ -194,9 +202,6 @@ void MainWindow::doNewSession(){
             newestSession->setNeedDeleted(false);
             // success
             newSessionSuccess = true;
-            // record duration
-            newestSession->setDuration(duration);
-            duration = 0.0;
         }
     }
 }
@@ -211,9 +216,10 @@ bool MainWindow::initiateSession(){
         s->setTitle(title.toStdString());
         sessions.push_back(s);
         sessionTime = QTime(0,0,0);
+        deviceDatesList.append(deviceDate); //store each session date for displayed in pc
+        deviceTimesList.append(deviceTime); //store each session time for displayed in pc
         emit signalSessionTimerInitial();
         progress = 0.0;
-        duration = 0.0;
         emit updateProgress();
         return true;
     }else{
@@ -253,9 +259,12 @@ bool MainWindow::doCalculate(){
         currSession->calculateBeforeSessionBaselines();
         currSession->setCurrentSite(0);
         for (int i = 0; i <60;i++ ) {
+
             if(isStop){
                 return false;
             }
+
+
             newSessionMutex.lock();
             if (newSessionPaused) {
                 emit signalSessionTimerPause();
@@ -329,6 +338,7 @@ bool MainWindow::doCalculate(){
             if(isStop){
                 return false;
             }
+
             newSessionMutex.lock();
             if (newSessionPaused) {
                 emit signalSessionTimerPause();
@@ -444,7 +454,6 @@ void MainWindow::AutoOff(){
     }
     // close light
     redLightflashOff();
-    greenLightflashOff();
     // close Timer
     pauseNewSessionTimerEnd();
     powerOff();
@@ -483,8 +492,6 @@ void MainWindow::sessionTimerStart(){
     sessionTimer->start(1000);
 }
 void MainWindow::sessionTimerPause(){
-    QTime time = ui->interface_menu_selection0_time->time();
-    duration = time.hour() * 3600 + time.minute() * 60 + time.second();
     sessionTimer->stop();
 }
 
@@ -899,5 +906,46 @@ void MainWindow::submitData(){
     }
 }
 
+void MainWindow::pc_submit_clicked(){
+    if(!sessions.empty()){
+        QString allDeviceDateToStr; // to store previous sessions date
+        for(const QDate& date : deviceDatesList) {
+            allDeviceDateToStr += date.toString("yyyy-MM-dd") + "\n";
+        }
+        if(!allDeviceDateToStr.isEmpty()){
+            allDeviceDateToStr.chop(1); //remove the last newline if string is not empty
+        }
 
+        QString allDeviceTimeToStr; // to store previous sessions time
+        for(const QTime& time : deviceTimesList) {
+            allDeviceTimeToStr += time.toString("HH:mm:ss") + "\n";
+        }
+        if(!allDeviceTimeToStr.isEmpty()){
+            allDeviceTimeToStr.chop(1);
+        }
+
+        PC_date = "Sessions Date: \n" + allDeviceDateToStr; //date info shows in pc
+        PC_time = "Sessions Time: \n" + allDeviceTimeToStr; //time info shows in pc
+
+        QString allBeforeBaselines;
+        QString allAfterBaselines;
+
+        for(Session* session : sessions){
+            if(session != nullptr){
+                allBeforeBaselines += session->getBeforeSessionBaselines() + "\n"; //before baselines frequency shows in pc
+                allAfterBaselines += session->getAfterSessionBaselines() + "\n"; //after baselines frequency shows in pc
+            }
+        }
+
+        ui->pcDate->setText(PC_date);
+        ui->pcTime->setText(PC_time);
+        ui->before_baseline_freq->setText("Recorded before session baseline frequency for 21 EEG sites:\n" + allBeforeBaselines);
+        ui->after_baseline_freq->setText("Recorded after session baseline frequency for 21 EEG sites:\n" + allAfterBaselines);
+    } else {
+        ui->pcDate->setText(PC_date);
+        ui->pcTime->setText(PC_time);
+        ui->before_baseline_freq->setText("Before baseline: Not recorded");
+        ui->after_baseline_freq->setText("After baseline: Not recorded");
+    }
+}
 

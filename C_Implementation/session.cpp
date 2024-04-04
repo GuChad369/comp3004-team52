@@ -28,6 +28,14 @@ const string& Session::getTime() const{
     return time;
 };
 
+QString Session::getDateAsString(){
+    return QString::fromStdString(date);
+}
+
+QString Session::getTimeAsString(){
+    return QString::fromStdString(time);
+}
+
 bool Session::getNeedDeleted(){
     return needDeleted;
 }
@@ -48,9 +56,6 @@ void Session::setTreatmentCounter(int t){
 }
 double Session::getDuration(){
     return this->duration;
-}
-void Session::setDuration(double d){
-    this->duration = d;
 }
 const string& Session::getTitle() const{
     return this->title;
@@ -110,5 +115,24 @@ void Session::printPCRecords() {
         qInfo() << "Site" << i + 1 << ", Initial Value:" << beforeSessionBaselines[i] << "; Final Value:" << afterSessionBaselines[i];
     }
 }
+
+//this function for display the baselines frequency for each 21 EEG sites
+QString Session::getBaselinesToString(const QVector<int>&  baselines){
+    QString baselinesStr = "";
+    for(int value : baselines){
+        baselinesStr += QString::number(value) + " ";
+    }
+    return baselinesStr.trimmed();
+}
+
+QString Session::getBeforeSessionBaselines() {
+    return getBaselinesToString(beforeSessionBaselines);
+}
+
+QString Session::getAfterSessionBaselines() {
+    return getBaselinesToString(afterSessionBaselines);
+}
+
+
 
 

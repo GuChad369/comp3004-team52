@@ -51,7 +51,6 @@ private:
     QTime sessionTime;
     double progress;
     QTimer* sessionTimer;
-    double duration;                            // record the second cost of one session
 
     void showMenuSelectionOne();
     void closeMenuSelectionOne();
@@ -128,6 +127,11 @@ private:
      * PC
      */
     vector<Session *> pcSessions;            // record pc data
+    QString PC_date;    // for displays the sessions date
+    QString PC_time;    // for displays the sessions time
+    QList<QDate> deviceDatesList;   // for stored the sessions date
+    QList<QTime> deviceTimesList;   // for stored the sessions time
+
 
 signals:
     /*
@@ -163,6 +167,7 @@ private slots:
     void sessionTimerInitial();
     void sessionTimerStart();
     void sessionTimerPause();
+    void pc_submit_clicked();
 
     /*
      * TIME AND DATE

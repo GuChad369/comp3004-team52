@@ -27,6 +27,8 @@ public:
 
     const string& getDate() const;
     const string& getTime() const;
+    QString getDateAsString();
+    QString getTimeAsString();
     bool getNeedDeleted();
     void setNeedDeleted(bool b);
     int getCurrentSite();
@@ -34,7 +36,6 @@ public:
     int getTreatmentCounter();
     void setTreatmentCounter(int t);
     double getDuration();
-    void setDuration(double d);
     const string& getTitle() const;
     void setTitle(const string& t);
 
@@ -44,8 +45,9 @@ public:
     void calculateAfterSessionBaselines();
     void calculateOverallBaseline(QVector<int>&  baselines);
     void printPCRecords();
-
-
+    QString getBaselinesToString(const QVector<int>&  baselines);
+    QString getBeforeSessionBaselines();
+    QString getAfterSessionBaselines();
 
 
 

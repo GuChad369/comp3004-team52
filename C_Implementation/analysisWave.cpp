@@ -8,5 +8,5 @@ int AnalysisWave::getBaseline(WaveSimulator* wave){
 
     return wave->generateWave();
 
-    }
+}
 
