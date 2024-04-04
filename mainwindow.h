@@ -51,6 +51,7 @@ private:
     QTime sessionTime;
     double progress;
     QTimer* sessionTimer;
+    double duration;                            // record the second cost of one session
 
     void showMenuSelectionOne();
     void closeMenuSelectionOne();

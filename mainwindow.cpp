@@ -16,6 +16,7 @@ MainWindow::MainWindow(QWidget *parent)
     ,newSessionPaused(false)
     ,isStop(true)
     ,progress(0.0)
+    ,duration(0.0)
     ,batteryPaused(false)
     ,batteryVolume(100.0)
     ,batteryInitiate(false)
@@ -193,6 +194,9 @@ void MainWindow::doNewSession(){
             newestSession->setNeedDeleted(false);
             // success
             newSessionSuccess = true;
+            // record duration
+            newestSession->setDuration(duration);
+            duration = 0.0;
         }
     }
 }
@@ -209,6 +213,7 @@ bool MainWindow::initiateSession(){
         sessionTime = QTime(0,0,0);
         emit signalSessionTimerInitial();
         progress = 0.0;
+        duration = 0.0;
         emit updateProgress();
         return true;
     }else{
@@ -248,7 +253,9 @@ bool MainWindow::doCalculate(){
         currSession->calculateBeforeSessionBaselines();
         currSession->setCurrentSite(0);
         for (int i = 0; i <60;i++ ) {
-
+            if(isStop){
+                return false;
+            }
             newSessionMutex.lock();
             if (newSessionPaused) {
                 emit signalSessionTimerPause();
@@ -319,13 +326,16 @@ bool MainWindow::doCalculate(){
         currSession->calculateAfterSessionBaselines();//this is the function calculate overall baseline after session.
 
         for (int i = 0; i <60;i++ ) {
+            if(isStop){
+                return false;
+            }
             newSessionMutex.lock();
-                        if (newSessionPaused) {
-                            emit signalSessionTimerPause();
-                            newSessionPauseCondition.wait(&newSessionMutex);
-                            emit signalSessionTimerStart();
-                        }
-                        newSessionMutex.unlock();
+            if (newSessionPaused) {
+                emit signalSessionTimerPause();
+                newSessionPauseCondition.wait(&newSessionMutex);
+                emit signalSessionTimerStart();
+            }
+            newSessionMutex.unlock();
 
             progress += 0.617;
             emit signalUpdateProgress();
@@ -434,6 +444,7 @@ void MainWindow::AutoOff(){
     }
     // close light
     redLightflashOff();
+    greenLightflashOff();
     // close Timer
     pauseNewSessionTimerEnd();
     powerOff();
@@ -472,6 +483,8 @@ void MainWindow::sessionTimerStart(){
     sessionTimer->start(1000);
 }
 void MainWindow::sessionTimerPause(){
+    QTime time = ui->interface_menu_selection0_time->time();
+    duration = time.hour() * 3600 + time.minute() * 60 + time.second();
     sessionTimer->stop();
 }
 

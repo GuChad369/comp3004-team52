@@ -34,6 +34,7 @@ public:
     int getTreatmentCounter();
     void setTreatmentCounter(int t);
     double getDuration();
+    void setDuration(double d);
     const string& getTitle() const;
     void setTitle(const string& t);
 

@@ -49,6 +49,9 @@ void Session::setTreatmentCounter(int t){
 double Session::getDuration(){
     return this->duration;
 }
+void Session::setDuration(double d){
+    this->duration = d;
+}
 const string& Session::getTitle() const{
     return this->title;
 }
