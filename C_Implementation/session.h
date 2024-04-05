@@ -21,22 +21,18 @@ using namespace std;
 class Session: public QObject
 {Q_OBJECT
 public:
-//    Session(const string& date, const string& time,QObject *parent = nullptr);
+    //    Session(const string& date, const string& time,QObject *parent = nullptr);
     Session(const string& date, const string& time);
     ~Session();
 
     const string& getDate() const;
     const string& getTime() const;
-    QString getDateAsString();
-    QString getTimeAsString();
     bool getNeedDeleted();
     void setNeedDeleted(bool b);
     int getCurrentSite();
     void setCurrentSite(int c);
     int getTreatmentCounter();
     void setTreatmentCounter(int t);
-    double getDuration();
-    void setDuration(double d);
     const string& getTitle() const;
     void setTitle(const string& t);
 
@@ -46,9 +42,10 @@ public:
     void calculateAfterSessionBaselines();
     void calculateOverallBaseline(QVector<int>&  baselines);
     void printPCRecords();
-    QString getBaselinesToString(const QVector<int>&  baselines);
-    QString getBeforeSessionBaselines();
-    QString getAfterSessionBaselines();
+
+    QVector<int> beforeSessionBaselines = QVector<int>(21);
+    QVector<int> afterSessionBaselines = QVector<int>(21);
+
 
 
 
@@ -56,14 +53,12 @@ private:
     string date;
     string time;
     bool needDeleted;
-    double duration;
     string title;
 
     QVector<WaveSimulator*> waves;
     AnalysisWave* analysis;
     Site* site;
-    QVector<int> beforeSessionBaselines = QVector<int>(21);
-    QVector<int> afterSessionBaselines = QVector<int>(21);
+
     int currentSite;
     static const int totalSites = 21;
 

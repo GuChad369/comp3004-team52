@@ -27,10 +27,6 @@ MainWindow::MainWindow(QWidget *parent)
     // increase QThreadPool, otherwise cant work for multi-thread
     QThreadPool::globalInstance()->setMaxThreadCount(20);
 
-    //initialize Lable texts showing in PC
-    PC_date = "Sorry! No previous sessions detect!";
-    PC_time = "Sorry! No previous sessions detect!";
-
     /*
      * NEW SESSION
      *
@@ -43,9 +39,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->interface_start, &QPushButton::clicked, this, &MainWindow::resumeTask);
     connect(ui->interface_stop, &QPushButton::clicked, this, &MainWindow::stopTask);
     sessionTimer = new QTimer(this);
-
-    //for pc ui test
-    connect(ui->pc_submit, &QPushButton::clicked, this, &MainWindow::pc_submit_clicked);
 
     /*
      * SESSION LOG
@@ -120,6 +113,17 @@ MainWindow::MainWindow(QWidget *parent)
         isConnect = !isConnect;
         ui->toggleConnection->setText(checked ? "On" : "Off");
     });
+
+    /*
+     * PC
+     */
+
+    //initialize Lable texts showing in PC
+    PC_date = "Sorry! No previous sessions detect!";
+    PC_time = "Sorry! No previous sessions detect!";
+    //for pc ui test
+    connect(ui->pc_submit, &QPushButton::clicked, this, &MainWindow::pc_submit_clicked);
+
 
 
 }
@@ -216,8 +220,6 @@ bool MainWindow::initiateSession(){
         s->setTitle(title.toStdString());
         sessions.push_back(s);
         sessionTime = QTime(0,2,41);
-        deviceDatesList.append(deviceDate); //store each session date for displayed in pc
-        deviceTimesList.append(deviceTime); //store each session time for displayed in pc
         emit signalSessionTimerInitial();
         progress = 0.0;
         emit updateProgress();
@@ -900,42 +902,40 @@ void MainWindow::doubleClickMenu(){
 /*
  * PC
  */
-void MainWindow::submitData(){
-    for (Session* s : sessions){
-        pcSessions.push_back(s);
-    }
-}
 
 void MainWindow::pc_submit_clicked(){
     if(!sessions.empty()){
-        QString allDeviceDateToStr; // to store previous sessions date
-        for(const QDate& date : deviceDatesList) {
-            allDeviceDateToStr += date.toString("yyyy-MM-dd") + "\n";
-        }
-        if(!allDeviceDateToStr.isEmpty()){
-            allDeviceDateToStr.chop(1); //remove the last newline if string is not empty
-        }
-
-        QString allDeviceTimeToStr; // to store previous sessions time
-        for(const QTime& time : deviceTimesList) {
-            allDeviceTimeToStr += time.toString("HH:mm:ss") + "\n";
-        }
-        if(!allDeviceTimeToStr.isEmpty()){
-            allDeviceTimeToStr.chop(1);
-        }
-
-        PC_date = "Sessions Date: \n" + allDeviceDateToStr; //date info shows in pc
-        PC_time = "Sessions Time: \n" + allDeviceTimeToStr; //time info shows in pc
-
+        QString allDeviceDateToStr;
+        QString allDeviceTimeToStr;
         QString allBeforeBaselines;
         QString allAfterBaselines;
 
         for(Session* session : sessions){
-            if(session != nullptr){
-                allBeforeBaselines += session->getBeforeSessionBaselines() + "\n"; //before baselines frequency shows in pc
-                allAfterBaselines += session->getAfterSessionBaselines() + "\n"; //after baselines frequency shows in pc
+            if(session){
+                allDeviceDateToStr += QString::fromStdString(session->getDate()) + "\n";
+                allDeviceTimeToStr += QString::fromStdString(session->getTime()) + "\n";
+
+
+                for (int i = 0; i < 21; ++i) {
+                    allBeforeBaselines +=  QString::number(session->beforeSessionBaselines[i]) + " ";//before baselines frequency shows in pc
+                }
+                allBeforeBaselines += "\n";
+                for (int i = 0; i < 21; ++i) {
+                    allAfterBaselines += QString::number(session->afterSessionBaselines[i]) + " "; //after baselines frequency shows in pc
+                }
+                allAfterBaselines += "\n";
             }
         }
+
+        //remove the last newline if string is not empty
+        allDeviceDateToStr.chop(1);
+        allDeviceTimeToStr.chop(1);
+        allBeforeBaselines.chop(1);
+        allAfterBaselines.chop(1);
+
+
+        PC_date = "Sessions Date: \n" + allDeviceDateToStr; //date info shows in pc
+        PC_time = "Sessions Time: \n" + allDeviceTimeToStr; //time info shows in pc
 
         ui->pcDate->setText(PC_date);
         ui->pcTime->setText(PC_time);

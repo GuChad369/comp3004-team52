@@ -129,8 +129,6 @@ private:
     vector<Session *> pcSessions;            // record pc data
     QString PC_date;    // for displays the sessions date
     QString PC_time;    // for displays the sessions time
-    QList<QDate> deviceDatesList;   // for stored the sessions date
-    QList<QTime> deviceTimesList;   // for stored the sessions time
 
 
 signals:
@@ -167,7 +165,7 @@ private slots:
     void sessionTimerInitial();
     void sessionTimerStart();
     void sessionTimerPause();
-    void pc_submit_clicked();
+
 
     /*
      * TIME AND DATE
@@ -196,7 +194,7 @@ private slots:
     /*
      * PC
     */
-    void submitData();
+    void pc_submit_clicked();
 
 };
 #endif // MAINWINDOW_H
