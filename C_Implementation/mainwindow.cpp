@@ -215,7 +215,7 @@ bool MainWindow::initiateSession(){
         QString title = date + " " + time;
         s->setTitle(title.toStdString());
         sessions.push_back(s);
-        sessionTime = QTime(0,0,0);
+        sessionTime = QTime(0,2,41);
         deviceDatesList.append(deviceDate); //store each session date for displayed in pc
         deviceTimesList.append(deviceTime); //store each session time for displayed in pc
         emit signalSessionTimerInitial();
@@ -483,7 +483,7 @@ void MainWindow::updateProgress(){
 void MainWindow::sessionTimerInitial(){
     disconnect(sessionTimer, &QTimer::timeout, nullptr, nullptr);
     connect(sessionTimer, &QTimer::timeout, this, [this]() {
-        sessionTime = sessionTime.addSecs(1);
+        sessionTime = sessionTime.addSecs(-1);
         ui->interface_menu_selection0_time->setTime(sessionTime);
     });
 
