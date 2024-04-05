@@ -38,7 +38,7 @@ In our team, everyone contributes to every part of the project, but there is a d
 5. Implementation:
     - primary: Chao Gu
     - Session log: Enhua Fan
-    - Tim and date: Haoxuean Hong
+    - Time and date: Haoxuan Hong
     - PC part:  Yuxiang He
     - EEG part: Yue Li
     - Battery: Yue Li
