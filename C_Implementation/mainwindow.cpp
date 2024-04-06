@@ -219,7 +219,7 @@ bool MainWindow::initiateSession(){
         QString title = date + " " + time;
         s->setTitle(title.toStdString());
         sessions.push_back(s);
-        sessionTime = QTime(0,2,41);
+        sessionTime = QTime(0,0,46);
         emit signalSessionTimerInitial();
         progress = 0.0;
         emit updateProgress();
@@ -260,7 +260,7 @@ bool MainWindow::doCalculate(){
         // function used to calculate overall baseline for 21 sites, will be showed in PC UI
         currSession->calculateBeforeSessionBaselines();
         currSession->setCurrentSite(0);
-        for (int i = 0; i <60;i++ ) {
+        for (int i = 0; i <5;i++ ) {
 
             if(isStop){
                 return false;
@@ -278,7 +278,7 @@ bool MainWindow::doCalculate(){
 
 
             QThread::msleep(1000);
-            progress += 0.617;
+            progress += 2.17;
             emit signalUpdateProgress();
         }
 
@@ -319,14 +319,14 @@ bool MainWindow::doCalculate(){
                 QThread::msleep(1000 / 16);
 
             }
-            progress += 0.617;
+            progress += 2.17;
             emit signalUpdateProgress();
 
             qInfo()<<"Site"<<currSession->getCurrentSite()+1<<"has finished treatment.";
             currSession->setCurrentSite(currSession->getCurrentSite()+1);
 
             QThread::msleep(1000);//1 second delay moving to next site
-            progress += 0.617;
+            progress += 2.17;
             emit signalUpdateProgress();
 
         }
@@ -335,25 +335,6 @@ bool MainWindow::doCalculate(){
 
         qInfo() << "------------------------------Treatment finished for all sites.------------------------------";
         currSession->calculateAfterSessionBaselines();//this is the function calculate overall baseline after session.
-
-        for (int i = 0; i <60;i++ ) {
-            if(isStop){
-                return false;
-            }
-
-            newSessionMutex.lock();
-            if (newSessionPaused) {
-                emit signalSessionTimerPause();
-                newSessionPauseCondition.wait(&newSessionMutex);
-                emit signalSessionTimerStart();
-            }
-            newSessionMutex.unlock();
-
-            progress += 0.617;
-            emit signalUpdateProgress();
-
-            QThread::msleep(1000);
-        }
 
         progress = 100;
         emit signalUpdateProgress();
