@@ -86,3 +86,52 @@ In our team, everyone contributes to every part of the project, but there is a d
         mv beep-01a.wav beep.wav
 
 9. Use qt open the file Team.
+
+## Set Git
+
+1. choose one folder
+
+        mkdir test
+        cd test
+
+2. download the git
+
+        sudo apt-get install git
+
+3. configure Git
+
+        git config --global user.name "github name"
+        git config --global user.email "email@example.com"
+
+4. configure ssh
+
+        ssh-keygen -t rsa -b 4096 -C "email@example.com"
+
+    press enter to proceed
+
+5. add the SSH Key
+
+        eval "$(ssh-agent -s)"
+        ssh-add ~/.ssh/id_rsa
+
+6. install xclip
+
+        sudo apt-get install xclip
+
+7. copy the ssh into clipboard
+
+        cat ~/.ssh/id_rsa.pub | xclip -sel clip
+
+8. Add into GitHub account
+
+    Go to GitHub, navigate to Settings > SSH and GPG keys > New SSH key, paste your key into the field, and save.
+
+9. clone
+
+        git clone git@github.com:YOURNAME/comp3004-team52.git
+
+10. enter the folder
+
+11. if you want to update
+
+        git fetch origin
