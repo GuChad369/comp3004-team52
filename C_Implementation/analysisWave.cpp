@@ -4,7 +4,7 @@
 AnalysisWave:: AnalysisWave(){}
 
 
-int AnalysisWave::getBaseline(WaveSimulator* wave){
+double AnalysisWave::getBaseline(WaveSimulator* wave){
 
     return wave->generateWave();
 

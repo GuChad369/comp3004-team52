@@ -8,6 +8,6 @@ class AnalysisWave{
 
 public:
     AnalysisWave();
-    int getBaseline(WaveSimulator* wave);
+    double getBaseline(WaveSimulator* wave);
 };
 #endif // ANALYSISWAVE_H

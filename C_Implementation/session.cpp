@@ -72,8 +72,8 @@ void Session::startSession() {
 int Session::onetimeTreatment(){
     if(treatmentCounter<treatmentIntervals){
         int offset = 5;
-        int newBaseline = analysis->getBaseline(waves[currentSite]);
-        int treatmentFrequency = newBaseline + offset;
+        double newBaseline = analysis->getBaseline(waves[currentSite]);
+        double treatmentFrequency = newBaseline + offset;
 
         qInfo()<<"Site"<<currentSite + 1<<":: round"<<(treatmentCounter +1)<<"/16,"<<"Begin treating: Dominant Frequency ="<<newBaseline<< ", Treatment Frequency after add offset ="<<treatmentFrequency;
         site->deliverTreatment(treatmentFrequency);
