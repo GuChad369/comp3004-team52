@@ -713,7 +713,7 @@ void MainWindow::batteryAction(){
 
 
         // update value
-        batteryVolume -= 0.05;
+        batteryVolume -= 0.8;
 
         emit signalUpdateBattery();
 
