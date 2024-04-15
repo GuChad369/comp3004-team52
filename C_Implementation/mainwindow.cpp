@@ -740,7 +740,7 @@ void MainWindow::resumeBattery(){
  *
 */
 void MainWindow::power(){
-    if(!batteryVolume){
+    if(batteryVolume <= 0){
         return ;
     }
     if(powerValue){
