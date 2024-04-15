@@ -683,7 +683,7 @@ void MainWindow::updateBattery(){
     if(currentValue != changedInt){
         ui->interface_battery->setValue(changedInt);
     }
-    if(!changedInt){
+    if(changedInt <= 0){
         AutoOff();
     }
 
