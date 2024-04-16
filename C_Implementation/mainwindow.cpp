@@ -75,6 +75,12 @@ MainWindow::MainWindow(QWidget *parent)
     greenLightflashOff();
 
 
+    /*
+     * Battery
+     *
+    */
+    connect(ui->interface_recharge, &QPushButton::clicked, this, &MainWindow::rechargeBattery);
+
     // for light since thread cant call parent timer directly
     connect(this, &MainWindow::signalBlueLightOn, this, &MainWindow::blueLightOn, Qt::QueuedConnection);
     connect(this, &MainWindow::signalBlueLightOff, this, &MainWindow::blueLightOff, Qt::QueuedConnection);
@@ -180,7 +186,7 @@ void MainWindow::checkConnection(){
             while(!isStop){
                 QDateTime currentTime = QDateTime::currentDateTime();
                 qint64 elapsedSeconds = startTime.secsTo(currentTime);
-                if (elapsedSeconds >= 5 *60) {
+                if (elapsedSeconds >= 5*60) {
                     // fail
                     return;
                 }
@@ -231,7 +237,7 @@ bool MainWindow::initiateSession(){
         while(!isStop){
             QDateTime currentTime = QDateTime::currentDateTime();
             qint64 elapsedSeconds = startTime.secsTo(currentTime);
-            if (elapsedSeconds >= 5 * 60) {
+            if (elapsedSeconds >= 5*60) {
                 // fail
                 return false;
             }
@@ -731,6 +737,15 @@ void MainWindow::resumeBattery(){
     batteryPaused = false;
     batteryPauseCondition.wakeAll();
     batteryMutex.unlock();
+}
+void MainWindow::rechargeBattery(){
+    // must power off
+    if(powerValue){
+        return;
+    }
+    batteryVolume = 100;
+    ui->interface_battery->setStyleSheet("");
+    updateBattery();
 }
 
 

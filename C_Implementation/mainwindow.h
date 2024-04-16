@@ -183,6 +183,7 @@ private slots:
      * Battery
      */
     void updateBattery();
+    void rechargeBattery();
 
     /*
      * Utils

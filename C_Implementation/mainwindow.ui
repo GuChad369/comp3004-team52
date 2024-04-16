@@ -492,6 +492,19 @@ QDateEdit::up-arrow, QDatedit::down-arrow {
       <string notr="true">QGraphicsView{background-color:grey;}</string>
      </property>
     </widget>
+    <widget class="QPushButton" name="interface_recharge">
+     <property name="geometry">
+      <rect>
+       <x>220</x>
+       <y>360</y>
+       <width>80</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>ReCharge</string>
+     </property>
+    </widget>
    </widget>
    <widget class="QFrame" name="eeg_frame">
     <property name="geometry">
