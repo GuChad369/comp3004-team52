@@ -1,6 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-
+#include <QVBoxLayout>
 
 
 /*
@@ -24,6 +24,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 {
     ui->setupUi(this);
+
     // increase QThreadPool, otherwise cant work for multi-thread
     QThreadPool::globalInstance()->setMaxThreadCount(20);
 
@@ -130,14 +131,20 @@ MainWindow::MainWindow(QWidget *parent)
     //for pc ui test
     connect(ui->pc_submit, &QPushButton::clicked, this, &MainWindow::pc_submit_clicked);
 
-
-
+    /*
+     * Waveform graph
+     */
+    setupGraphView();
+    connect(this, &MainWindow::graphNeedsUpdate, this, &MainWindow::onGraphUpdate);
+    connect(this, &MainWindow::treatmentCompleted, this, &MainWindow::updateGraph);
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
 }
+
+
 
 /*
  * NEW SESSION
@@ -296,7 +303,7 @@ bool MainWindow::doCalculate(){
             if(isStop){
                 return false;
             }
-
+            //for update waveform
             currSession->setTreatmentCounter(0);
             for (int i = 0; i < 16; i++ ) {
                 if(isStop){
@@ -346,6 +353,7 @@ bool MainWindow::doCalculate(){
         emit signalUpdateProgress();
         emit signalSessionTimerPause();
         QThread::msleep(1000);
+        emit treatmentCompleted(); //emit the signal when the treatment is completed
         return true;
     }
     return false;
@@ -416,6 +424,8 @@ void MainWindow::newSessionCompleted(){
     redLightflashOff();
     greenLightflashOff();
     if(newSessionSuccess){
+        // update the waveform graph to show the afterSessionBaselines
+        updateGraph();
         // show complete component
         ui->interface_menu_selection0_completed->setVisible(true);
         // connect event
@@ -945,3 +955,58 @@ void MainWindow::pc_submit_clicked(){
     }
 }
 
+/*
+ * Waveform graph
+ *
+*/
+
+void MainWindow::setupGraphView()
+{
+    scene = new QGraphicsScene(this);
+    view = new QGraphicsView(scene, this);
+
+    ui->waveform_box->setLayout(new QVBoxLayout());
+    ui->waveform_box->layout()->addWidget(view);
+    //remove the fixed size for the sceneRect and replace it with a size that matches the waveform_box
+    QRectF rect = QRectF(0, 0, ui->waveform_box->width(), ui->waveform_box->height());
+    view->setSceneRect(rect);
+}
+
+void MainWindow::onGraphUpdate()
+{
+    scene->clear(); //clear previous points
+    qreal viewWidth = view->sceneRect().width();
+    qreal viewHeight = view->sceneRect().height();
+    float xStep = viewWidth / 21;
+    float maxY = 0;
+
+    //find the maximum y-value across all afterSessionBaselines
+    for (const auto& session : sessions) {
+        auto maxIt = std::max_element(session->afterSessionBaselines.begin(), session->afterSessionBaselines.end());
+        if (maxIt != session->afterSessionBaselines.end() && *maxIt > maxY) {
+            maxY = *maxIt;
+        }
+    }
+
+    for (auto& session : sessions) {
+        QPointF prevPoint; //keep track of the previous point
+        for (int i = 0; i < 21; ++i) {
+            qreal x = xStep * i;
+            qreal y = (session->afterSessionBaselines[i] / maxY) * viewHeight;
+            QPointF point(x, viewHeight - y); // flip y to have the origin at the bottom left
+            scene->addEllipse(point.x(), point.y(), 5, 5, QPen(), QBrush(Qt::red)); //change the color if needed
+
+            if (i > 0) {
+                //draw a line from the previous point to the current point
+                QLineF line(prevPoint, point);
+                scene->addLine(line, QPen(Qt::blue));
+            }
+            prevPoint = point; //update the previous point
+        }
+    }
+}
+
+void MainWindow::updateGraph()
+{
+    emit graphNeedsUpdate(); //trigger the graph update
+}
