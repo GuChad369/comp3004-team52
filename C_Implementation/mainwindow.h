@@ -19,6 +19,8 @@
 #include <QDateTime>
 #include <QDate>
 #include <QTime>
+#include <QGraphicsLineItem>
+#include <vector>
 
 
 QT_BEGIN_NAMESPACE
@@ -130,6 +132,15 @@ private:
     QString PC_date;    // for displays the sessions date
     QString PC_time;    // for displays the sessions time
 
+    /*
+     * Waveform graph
+     */
+    QGraphicsScene *scene;
+    QGraphicsView *view;
+    QTimer *graphUpdateTimer;   //timer to update graph
+    void setupGraphView();
+    void updateGraph(); //function to update graph from session data
+
 
 signals:
     /*
@@ -148,8 +159,8 @@ signals:
     void signalSessionTimerInitial();
     void signalSessionTimerStart();
     void signalSessionTimerPause();
-
-
+    void graphNeedsUpdate();
+    void treatmentCompleted();
 
 private slots:
     /*
@@ -165,7 +176,6 @@ private slots:
     void sessionTimerInitial();
     void sessionTimerStart();
     void sessionTimerPause();
-
 
     /*
      * TIME AND DATE
@@ -196,6 +206,11 @@ private slots:
      * PC
     */
     void pc_submit_clicked();
+
+    /*
+     * Waveform graph
+    */
+    void onGraphUpdate();       // Slot to handle graph updates
 
 };
 #endif // MAINWINDOW_H
