@@ -125,18 +125,15 @@ MainWindow::MainWindow(QWidget *parent)
      * PC
      */
 
-    //initialize Lable texts showing in PC
-    PC_date = "Sorry! No previous sessions detect!";
-    PC_time = "Sorry! No previous sessions detect!";
     //for pc ui test
     connect(ui->pc_submit, &QPushButton::clicked, this, &MainWindow::pc_submit_clicked);
+    connect(ui->pc_monitor_show, &QListWidget::itemDoubleClicked, this, &MainWindow::doubleClickPc);
 
     /*
      * Waveform graph
      */
     setupGraphView();
-    connect(this, &MainWindow::graphNeedsUpdate, this, &MainWindow::onGraphUpdate);
-    connect(this, &MainWindow::treatmentCompleted, this, &MainWindow::updateGraph);
+
 }
 
 MainWindow::~MainWindow()
@@ -353,7 +350,7 @@ bool MainWindow::doCalculate(){
         emit signalUpdateProgress();
         emit signalSessionTimerPause();
         QThread::msleep(1000);
-        emit treatmentCompleted(); //emit the signal when the treatment is completed
+
         return true;
     }
     return false;
@@ -424,8 +421,7 @@ void MainWindow::newSessionCompleted(){
     redLightflashOff();
     greenLightflashOff();
     if(newSessionSuccess){
-        // update the waveform graph to show the afterSessionBaselines
-        updateGraph();
+
         // show complete component
         ui->interface_menu_selection0_completed->setVisible(true);
         // connect event
@@ -910,51 +906,30 @@ void MainWindow::doubleClickMenu(){
  */
 
 void MainWindow::pc_submit_clicked(){
-    if(!sessions.empty()){
-        QString allDeviceDateToStr;
-        QString allDeviceTimeToStr;
-        QString allBeforeBaselines;
-        QString allAfterBaselines;
+    if(!isStop){
+        return;
+    }
+    for (Session* s : sessions) {
+        if(s != nullptr){
+            QString itemText = QString::fromStdString(s->getTitle());
 
-        for(Session* session : sessions){
-            if(session){
-                allDeviceDateToStr += QString::fromStdString(session->getDate()) + "\n";
-                allDeviceTimeToStr += QString::fromStdString(session->getTime()) + "\n";
-
-
-                for (int i = 0; i < 21; ++i) {
-                    allBeforeBaselines +=  QString::number(session->beforeSessionBaselines[i]) + " ";//before baselines frequency shows in pc
-                }
-                allBeforeBaselines += "\n";
-                for (int i = 0; i < 21; ++i) {
-                    allAfterBaselines += QString::number(session->afterSessionBaselines[i]) + " "; //after baselines frequency shows in pc
-                }
-                allAfterBaselines += "\n";
+            // Check if an item with the same text already exists
+            QList<QListWidgetItem*> existingItems = ui->pc_monitor_show->findItems(itemText, Qt::MatchExactly);
+            if (existingItems.isEmpty()) {
+                // No existing item with the same text, so add a new item
+                QListWidgetItem *newItem = new QListWidgetItem();
+                newItem->setText(itemText);
+                ui->pc_monitor_show->addItem(newItem);
             }
         }
-
-        //remove the last newline if string is not empty
-        allDeviceDateToStr.chop(1);
-        allDeviceTimeToStr.chop(1);
-        allBeforeBaselines.chop(1);
-        allAfterBaselines.chop(1);
-
-
-        PC_date = "Sessions Date: \n" + allDeviceDateToStr; //date info shows in pc
-        PC_time = "Sessions Time: \n" + allDeviceTimeToStr; //time info shows in pc
-
-        ui->pcDate->setText(PC_date);
-        ui->pcTime->setText(PC_time);
-        ui->before_baseline_freq->setText("Recorded before session baseline frequency for 21 EEG sites:\n" + allBeforeBaselines);
-        ui->after_baseline_freq->setText("Recorded after session baseline frequency for 21 EEG sites:\n" + allAfterBaselines);
-    } else {
-        ui->pcDate->setText(PC_date);
-        ui->pcTime->setText(PC_time);
-        ui->before_baseline_freq->setText("Before baseline: Not recorded");
-        ui->after_baseline_freq->setText("After baseline: Not recorded");
     }
-}
 
+
+}
+void MainWindow::doubleClickPc(){
+    int index = ui->pc_monitor_show->currentRow();
+    onGraphUpdate(index);
+}
 /*
  * Waveform graph
  *
@@ -967,12 +942,12 @@ void MainWindow::setupGraphView()
 
     ui->waveform_box->setLayout(new QVBoxLayout());
     ui->waveform_box->layout()->addWidget(view);
-    //remove the fixed size for the sceneRect and replace it with a size that matches the waveform_box
+    // remove the fixed size for the sceneRect and replace it with a size that matches the waveform_box
     QRectF rect = QRectF(0, 0, ui->waveform_box->width(), ui->waveform_box->height());
     view->setSceneRect(rect);
 }
 
-void MainWindow::onGraphUpdate()
+void MainWindow::onGraphUpdate(int index)
 {
     scene->clear(); //clear previous points
     qreal viewWidth = view->sceneRect().width();
@@ -980,33 +955,29 @@ void MainWindow::onGraphUpdate()
     float xStep = viewWidth / 21;
     float maxY = 0;
 
+    Session * session = sessions[index];
+
     //find the maximum y-value across all afterSessionBaselines
-    for (const auto& session : sessions) {
-        auto maxIt = std::max_element(session->afterSessionBaselines.begin(), session->afterSessionBaselines.end());
-        if (maxIt != session->afterSessionBaselines.end() && *maxIt > maxY) {
-            maxY = *maxIt;
-        }
+
+    auto maxIt = max_element(session->afterSessionBaselines.begin(), session->afterSessionBaselines.end());
+    if (maxIt != session->afterSessionBaselines.end()) {
+        maxY = max(maxY, static_cast<float>(*maxIt));
     }
 
-    for (auto& session : sessions) {
-        QPointF prevPoint; //keep track of the previous point
-        for (int i = 0; i < 21; ++i) {
-            qreal x = xStep * i;
-            qreal y = (session->afterSessionBaselines[i] / maxY) * viewHeight;
-            QPointF point(x, viewHeight - y); // flip y to have the origin at the bottom left
-            scene->addEllipse(point.x(), point.y(), 5, 5, QPen(), QBrush(Qt::red)); //change the color if needed
 
-            if (i > 0) {
-                //draw a line from the previous point to the current point
-                QLineF line(prevPoint, point);
-                scene->addLine(line, QPen(Qt::blue));
-            }
-            prevPoint = point; //update the previous point
+    QPointF prevPoint(0, viewHeight); //keep track of the previous point
+    for (int i = 0; i < 21 && i < session->afterSessionBaselines.size(); ++i) {
+        qreal x = xStep * i;
+        qreal y = (session->afterSessionBaselines[i] / maxY) * viewHeight;
+        QPointF point(x, viewHeight - y); // flip y to have the origin at the bottom left
+        scene->addEllipse(point.x(), point.y(), 5, 5, QPen(), QBrush(Qt::red)); //change the color if needed
+
+        if (i > 0) {
+            //draw a line from the previous point to the current point
+            QLineF line(prevPoint, point);
+            scene->addLine(line, QPen(Qt::blue));
         }
+        prevPoint = point; //update the previous point
     }
-}
 
-void MainWindow::updateGraph()
-{
-    emit graphNeedsUpdate(); //trigger the graph update
 }

@@ -137,9 +137,10 @@ private:
      */
     QGraphicsScene *scene;
     QGraphicsView *view;
-    QTimer *graphUpdateTimer;   //timer to update graph
     void setupGraphView();
-    void updateGraph(); //function to update graph from session data
+    void onGraphUpdate(int index);       // Slot to handle graph updates
+    void doubleClickPc();
+
 
 
 signals:
@@ -206,11 +207,6 @@ private slots:
      * PC
     */
     void pc_submit_clicked();
-
-    /*
-     * Waveform graph
-    */
-    void onGraphUpdate();       // Slot to handle graph updates
 
 };
 #endif // MAINWINDOW_H
